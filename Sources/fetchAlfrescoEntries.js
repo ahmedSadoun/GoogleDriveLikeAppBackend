@@ -1,6 +1,7 @@
 import axios from "axios";
 import fetch from "node-fetch";
 import btoa from "btoa"; // If you don't have btoa, install it with `npm install btoa` or use Buffer directly.
+import fs from "fs";
 
 const url = "http://localhost:8080";
 
@@ -95,6 +96,46 @@ async function createNewNode(entry_id, entry_name) {
   });
   return response.data;
 }
+async function deleteNode(entry_id) {
+  let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
+  const response = await axios.delete(combinedUrl, {
+    auth: {
+      username,
+      password,
+    },
+  });
+  return response;
+}
+
+// deleteNode("2b7bc791-90c8-4b72-bf78-60b3c981c9d6");
+async function uploadFile(entry_id, body, headers) {
+  // Read file content
+  // Make API request to upload file to Alfresco
+  // `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children`
+  if (!body[0]) {
+    return res.status(400).json({ message: "Please provide a file." });
+  }
+  // console.log(body);
+
+  const formData = new FormData();
+  body.forEach((file) => {
+    const blob = new Blob([file.buffer], { type: file.mimetype });
+    formData.append(file.fieldname, blob, file.originalname);
+  });
+  const response = await axios.post(
+    `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?autoRename=true`,
+    formData,
+    {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString(
+          "base64"
+        )}`,
+        headers,
+      },
+    }
+  );
+  return response;
+}
 
 async function fetchEntryParent(entry_id) {
   let subEntriesUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/parents`;
@@ -144,4 +185,6 @@ export {
   fetchFileContent,
   fetchEntryMetaData,
   createNewNode,
+  uploadFile,
+  deleteNode,
 };

@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
+import multer from "multer";
 
-import { fetchEntitiesById, fetchRootFolders } from "./Sources/filterSource.js";
+// import { fetchEntitiesById, fetchRootFolders } from "./Sources/filterSource.js";
 import {
   fetchRootEntries,
   fetchSubEntries,
@@ -9,11 +10,16 @@ import {
   fetchFileContent,
   fetchEntryMetaData,
   createNewNode,
+  uploadFile,
+  deleteNode,
 } from "./Sources/fetchAlfrescoEntries.js";
+
 const app = express();
 const port = 3000;
 app.use(cors());
 app.use(express.json());
+const upload = multer();
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
   res.send(fetchRootFolders());
@@ -86,6 +92,36 @@ app.post("/alFresco/createFolder", async (req, res) => {
     // If an error occurs during folder creation, send a 500 Internal Server Error response
     console.error("Error creating folder:", error);
     res.status(500).send("Internal Server Error");
+  }
+});
+app.post("/alFresco/uploadFile/:entry_id", upload.any(), async (req, res) => {
+  try {
+    const entry_id = req.params.entry_id;
+    // const { file } = req.files; // Assuming the file is sent as 'file' field in the request
+    // res.send("tmam");
+    // return;
+    // return;
+    let response = await uploadFile(
+      entry_id,
+      req.files,
+      req.headers["content-type"]
+    );
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error("Error uploading file to Alfresco:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+});
+app.post("/alFresco/delete/:entry_id", async (req, res) => {
+  try {
+    const entry_id = req.params.entry_id;
+
+    let response = await deleteNode(entry_id);
+    // console.log(response.status);
+    const status = response.status === 204 ? 200 : 400; // the service returns 204 when the deletion is done
+    res.status(status).send();
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error." });
   }
 });
 
