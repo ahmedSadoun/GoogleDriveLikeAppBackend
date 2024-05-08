@@ -35,39 +35,6 @@ async function fetchSubEntries(entry_id) {
   return res.data;
 }
 
-// async function fetchFileContent(entry_id) {
-//   let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/content?attachment=true`;
-//   // The username and password you need to use for basic authentication
-//   const username = "admin";
-//   const password = "admin";
-
-//   // Base64 encode the username and password
-//   const base64Auth = btoa(`${username}:${password}`);
-
-//   try {
-//     const response = await fetch(combinedUrl, {
-//       headers: {
-//         // Include the Base64-encoded credentials with the 'Authorization' header
-//         Authorization: `Basic ${base64Auth}`,
-//       },
-//     });
-
-//     if (response.ok) {
-//       const buffer = await response.arrayBuffer();
-//       // console.log(buffer);
-//       return {
-//         arrayBuffer: buffer,
-//         contentType: response.headers.get("content-type"),
-//       };
-//       // console.log("", response);
-//     } else {
-//       res.status(500).send("Error fetching the image.");
-//     }
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).send("Error fetching the image.");
-//   }
-// }
 async function fetchFileContent(entry_id) {
   let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/content?attachment=true`;
   const response = await axios.get(combinedUrl, {
@@ -82,6 +49,48 @@ async function fetchFileContent(entry_id) {
     contentType: response.headers["content-type"],
   };
 }
+async function fetchFileContentThumbNail(entry_id, fileContentType) {
+  //http://127.0.0.1:8080/alfresco/s/api/node/workspace/SpacesStore/2fa8a7b9-9336-46e2-bac6-2a0ed5a07e2c/content/thumbnails/imgpreview?c=queue&amp;ph=true&amp;
+  try {
+    let combinedUrl = `${url}/alfresco/s/api/node/workspace/SpacesStore/${entry_id}/content/thumbnails/${fileContentType}?c=queue&amp;ph=true&amp;lastModified=1`;
+    const response = await axios.get(combinedUrl, {
+      responseType: "arraybuffer", // Ensure binary response
+      auth: {
+        username,
+        password,
+      },
+    });
+    if (response.status == 404) {
+      createFileContentThumbNail(entry_id, fileContentType);
+    }
+    return {
+      status: response.status,
+      arrayBuffer: response.data,
+      contentType: response.headers["content-type"],
+    };
+  } catch (error) {
+    console.error("Error fetching thumbnail:");
+    throw error; // re-throw the error to propagate it
+  }
+}
+// if the thumbnail wasn't found, then create it.
+async function createFileContentThumbNail(entry_id, fileContentType) {
+  //http://127.0.0.1:8080/alfresco/s/api/node/workspace/SpacesStore/2fa8a7b9-9336-46e2-bac6-2a0ed5a07e2c/content/thumbnails/imgpreview?c=queue&amp;ph=true&amp;
+  try {
+    let combinedUrl = `${url}/alfresco/s/api/node/workspace/SpacesStore/${entry_id}/content/thumbnails/${fileContentType}?c=force`;
+    await axios.get(combinedUrl, {
+      responseType: "arraybuffer", // Ensure binary response
+      auth: {
+        username,
+        password,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching thumbnail:");
+    throw error; // re-throw the error to propagate it
+  }
+}
+
 async function createNewNode(entry_id, entry_name) {
   let data = {
     name: entry_name,
@@ -96,6 +105,45 @@ async function createNewNode(entry_id, entry_name) {
   });
   return response.data;
 }
+async function updateNodeMetaData(entry_id, metaData) {
+  let data = {
+    ...metaData,
+  };
+  // console.log("Sssssssssss", data);
+  // return;
+  let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
+  const response = await axios.put(combinedUrl, data, {
+    auth: {
+      username,
+      password,
+    },
+  });
+  return response.data;
+}
+async function fetchNodeMetaData(entry_id) {
+  try {
+    // Construct the URL
+    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}?include=properties`;
+
+    // Make the API request
+
+    const res = await axios.get(combinedUrl, {
+      auth: {
+        username,
+        password,
+      },
+    });
+
+    // Return the data if successful
+    return { resBody: res.data, statusCode: 200 };
+  } catch (error) {
+    return {
+      resBody: error.response.data,
+      statusCode: error.response.data.error.statusCode,
+    };
+  }
+}
+
 async function deleteNode(entry_id) {
   let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
   const response = await axios.delete(combinedUrl, {
@@ -106,30 +154,31 @@ async function deleteNode(entry_id) {
   });
   return response;
 }
+// console.log("Aaaaaaa");
+// fetchNodeMetaData("2b7bc791-90c8-4b72-bf78-60b3c981c9d6");
 
-// deleteNode("2b7bc791-90c8-4b72-bf78-60b3c981c9d6");
 async function uploadFile(entry_id, body, headers) {
-  // Read file content
-  // Make API request to upload file to Alfresco
-  // `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children`
   if (!body[0]) {
     return res.status(400).json({ message: "Please provide a file." });
   }
-  // console.log(body);
-
   const formData = new FormData();
   body.forEach((file) => {
     const blob = new Blob([file.buffer], { type: file.mimetype });
+    // for arabic letters, this solves the encoding problem
+    file.originalname = Buffer.from(file.originalname, "latin1").toString(
+      "utf8"
+    );
     formData.append(file.fieldname, blob, file.originalname);
   });
   const response = await axios.post(
     `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?autoRename=true`,
     formData,
     {
+      auth: {
+        username,
+        password,
+      },
       headers: {
-        Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString(
-          "base64"
-        )}`,
         headers,
       },
     }
@@ -187,4 +236,7 @@ export {
   createNewNode,
   uploadFile,
   deleteNode,
+  fetchFileContentThumbNail,
+  fetchNodeMetaData,
+  updateNodeMetaData,
 };
