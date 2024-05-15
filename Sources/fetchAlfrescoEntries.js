@@ -106,24 +106,83 @@ async function createNewNode(entry_id, entry_name) {
   return response.data;
 }
 async function updateNodeMetaData(entry_id, metaData) {
-  let data = {
-    ...metaData,
-  };
-  // console.log("Sssssssssss", data);
-  // return;
-  let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
-  const response = await axios.put(combinedUrl, data, {
-    auth: {
-      username,
-      password,
-    },
-  });
-  return response.data;
+  try {
+    let data = {
+      ...metaData,
+    };
+
+    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
+    const response = await axios.put(combinedUrl, data, {
+      auth: {
+        username,
+        password,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data && error.response.data.error) {
+      // If the error response contains an error message, return it
+      return error.response.data.error;
+    } else {
+      // If no specific error message found, return a generic error message
+      return "An error occurred while updating node metadata.";
+    }
+  }
 }
+
 async function fetchNodeMetaData(entry_id) {
   try {
     // Construct the URL
     let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}?include=properties`;
+
+    // Make the API request
+
+    const res = await axios.get(combinedUrl, {
+      auth: {
+        username,
+        password,
+      },
+    });
+
+    // Return the data if successful
+    return { resBody: res.data, statusCode: 200 };
+  } catch (error) {
+    return {
+      resBody: error.response.data,
+      statusCode: error.response.data.error.statusCode,
+    };
+  }
+}
+async function fetchTypeProperties(type_id) {
+  try {
+    // Construct the URL
+    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/types/${type_id}`;
+
+    // Make the API request
+
+    const res = await axios.get(combinedUrl, {
+      auth: {
+        username,
+        password,
+      },
+    });
+
+    // Return the data if successful
+    return { resBody: res.data, statusCode: 200 };
+  } catch (error) {
+    return {
+      resBody: error.response.data,
+      statusCode: error.response.data.error.statusCode,
+    };
+  }
+}
+async function fetchTypes() {
+  try {
+    // Construct the URL
+    //parentId in ('cm:content')
+    // where=(not namespaceUri matches('http://www.alfresco.*')) in order not to get the built-in content types.
+    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/types?where=(not namespaceUri matches('http://www.alfresco.*'))`;
 
     // Make the API request
 
@@ -239,4 +298,6 @@ export {
   fetchFileContentThumbNail,
   fetchNodeMetaData,
   updateNodeMetaData,
+  fetchTypeProperties,
+  fetchTypes,
 };

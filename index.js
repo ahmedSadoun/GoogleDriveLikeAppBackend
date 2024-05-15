@@ -18,6 +18,8 @@ import {
   fetchFileContentThumbNail,
   fetchNodeMetaData,
   updateNodeMetaData,
+  fetchTypeProperties,
+  fetchTypes,
 } from "./Sources/fetchAlfrescoEntries.js";
 
 const app = express();
@@ -176,6 +178,43 @@ app.get("/alFresco/fileNodeMetaData/:entry_id", async (req, res) => {
     res.status(500).send("Error fetching file node metadata");
   }
 });
+app.get("/alFresco/fetchTypeProperties/:type_id", async (req, res) => {
+  try {
+    const type_id = req.params.type_id;
+
+    // Call the function to fetch node metadata
+    const response = await fetchTypeProperties(type_id);
+    // console.log(response);
+    if (response.statusCode !== 200) {
+      res.status(response.statusCode).json(response.resBody);
+      return;
+    }
+    // Send the response if successful
+    res.status(response.statusCode).json(response.resBody);
+  } catch (error) {
+    // Handle the error
+    console.error("Error fetching file node metadata:", error);
+    // Send an error response to the client
+    res.status(500).send("Error fetching file node metadata");
+  }
+});
+app.get("/alFresco/fetchTypes", async (req, res) => {
+  try {
+    const response = await fetchTypes();
+    // console.log(response);
+    if (response.statusCode !== 200) {
+      res.status(response.statusCode).json(response.resBody);
+      return;
+    }
+    // Send the response if successful
+    res.status(response.statusCode).json(response.resBody);
+  } catch (error) {
+    // Handle the error
+    console.error("Error fetching file node metadata:", error);
+    // Send an error response to the client
+    res.status(500).send("Error fetching file node metadata");
+  }
+});
 
 app.put("/alFresco/fileNodeMetaData/:entry_id", async (req, res) => {
   try {
@@ -194,7 +233,7 @@ app.put("/alFresco/fileNodeMetaData/:entry_id", async (req, res) => {
   } catch (error) {
     // If an error occurs during folder creation, send a 500 Internal Server Error response
     // console.error("Error creating folder:", error.data.error.statusCode);
-    res.status(500).send("Internal Server Error", error.data.error.statusCode);
+    res.status(500).send(error);
   }
 });
 app.listen(port, () => {
