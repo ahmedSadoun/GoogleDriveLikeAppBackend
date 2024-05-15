@@ -1,12 +1,55 @@
 import axios from "axios";
 import fetch from "node-fetch";
-import btoa from "btoa"; // If you don't have btoa, install it with `npm install btoa` or use Buffer directly.
+import btoa from "btoa";
 import fs from "fs";
 
 const url = "http://localhost:8080";
 
 const username = "admin";
 const password = "admin";
+async function searchNodes(queryValue) {
+  try {
+    // Define the search endpoint
+    const endpoint = `${url}/alfresco/api/-default-/public/search/versions/1/search`;
+
+    // Define the search query
+    const searchQuery = {
+      query: {
+        query: queryValue + "*",
+        // query: "cm:name:saad*",
+      },
+      include: ["aspectNames", "properties"],
+      paging: {
+        maxItems: 100,
+        skipCount: 0,
+      },
+    };
+
+    // Perform the POST request
+    const response = await axios.post(endpoint, searchQuery, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      auth: {
+        username: username,
+        password: password,
+      },
+    });
+
+    // Log the search results
+    // console.log("Search Results:", response.data);
+    return response.data;
+  } catch (error) {
+    // console.error("Error performing search:", error);
+    if (error.response && error.response.data && error.response.data.error) {
+      // If the error response contains an error message, return it
+      return error.response.data.error;
+    } else {
+      // If no specific error message found, return a generic error message
+      return "An error occurred while retrieving items";
+    }
+  }
+}
 
 async function fetchRootEntries() {
   const res = await axios.get(
@@ -70,7 +113,7 @@ async function fetchFileContentThumbNail(entry_id, fileContentType) {
     };
   } catch (error) {
     console.error("Error fetching thumbnail:");
-    throw error; // re-throw the error to propagate it
+    // throw error; // re-throw the error to propagate it
   }
 }
 // if the thumbnail wasn't found, then create it.
@@ -213,8 +256,6 @@ async function deleteNode(entry_id) {
   });
   return response;
 }
-// console.log("Aaaaaaa");
-// fetchNodeMetaData("2b7bc791-90c8-4b72-bf78-60b3c981c9d6");
 
 async function uploadFile(entry_id, body, headers) {
   if (!body[0]) {
@@ -300,4 +341,5 @@ export {
   updateNodeMetaData,
   fetchTypeProperties,
   fetchTypes,
+  searchNodes,
 };

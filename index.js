@@ -20,6 +20,7 @@ import {
   updateNodeMetaData,
   fetchTypeProperties,
   fetchTypes,
+  searchNodes,
 } from "./Sources/fetchAlfrescoEntries.js";
 
 const app = express();
@@ -236,6 +237,25 @@ app.put("/alFresco/fileNodeMetaData/:entry_id", async (req, res) => {
     res.status(500).send(error);
   }
 });
+app.post("/alFresco/searchNodes", async (req, res) => {
+  try {
+    // console.log(req.body);
+    // Check if the request body contains the required fields
+    const queryValue = req.body.queryValue;
+
+    if (!queryValue) {
+      // If any of the required fields are missing, send a 400 Bad Request response
+      return res.status(400).send("Missing queryValue in request body");
+    }
+
+    const response = await searchNodes(queryValue);
+
+    res.status(200).send(response);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
