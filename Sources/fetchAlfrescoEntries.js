@@ -3,22 +3,24 @@ import fetch from "node-fetch";
 import btoa from "btoa";
 import fs from "fs";
 
-const url = "http://localhost:8080";
+const baseURL = "http://localhost:8080";
 
 const username = "admin";
 const password = "admin";
 async function searchNodes(queryValue) {
   try {
+    // const facetFields = ["{HR}creator"];
     // Define the search endpoint
-    const endpoint = `${url}/alfresco/api/-default-/public/search/versions/1/search`;
+    const endpoint = `${baseURL}/alfresco/api/-default-/public/search/versions/1/search`;
 
     // Define the search query
     const searchQuery = {
       query: {
-        query: queryValue + "*",
+        query: queryValue,
         // query: "cm:name:saad*",
       },
       include: ["aspectNames", "properties"],
+      // facetFields: facetFields,
       paging: {
         maxItems: 100,
         skipCount: 0,
@@ -53,7 +55,7 @@ async function searchNodes(queryValue) {
 
 async function fetchRootEntries() {
   const res = await axios.get(
-    url +
+    baseURL +
       "/alfresco/api/-default-/public/alfresco/versions/1/nodes/-root-/children?skipCount=0&maxItems=100",
     {
       auth: {
@@ -67,7 +69,7 @@ async function fetchRootEntries() {
 }
 // By entry id
 async function fetchSubEntries(entry_id) {
-  let subEntriesUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?skipCount=0&maxItems=100`;
+  let subEntriesUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?skipCount=0&maxItems=100`;
   const res = await axios.get(subEntriesUrl, {
     auth: {
       username,
@@ -79,7 +81,7 @@ async function fetchSubEntries(entry_id) {
 }
 
 async function fetchFileContent(entry_id) {
-  let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/content?attachment=true`;
+  let combinedUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/content?attachment=true`;
   const response = await axios.get(combinedUrl, {
     responseType: "arraybuffer", // Ensure binary response
     auth: {
@@ -95,7 +97,7 @@ async function fetchFileContent(entry_id) {
 async function fetchFileContentThumbNail(entry_id, fileContentType) {
   //http://127.0.0.1:8080/alfresco/s/api/node/workspace/SpacesStore/2fa8a7b9-9336-46e2-bac6-2a0ed5a07e2c/content/thumbnails/imgpreview?c=queue&amp;ph=true&amp;
   try {
-    let combinedUrl = `${url}/alfresco/s/api/node/workspace/SpacesStore/${entry_id}/content/thumbnails/${fileContentType}?c=queue&amp;ph=true&amp;lastModified=1`;
+    let combinedUrl = `${baseURL}/alfresco/s/api/node/workspace/SpacesStore/${entry_id}/content/thumbnails/${fileContentType}?c=queue&amp;ph=true&amp;lastModified=1`;
     const response = await axios.get(combinedUrl, {
       responseType: "arraybuffer", // Ensure binary response
       auth: {
@@ -120,7 +122,7 @@ async function fetchFileContentThumbNail(entry_id, fileContentType) {
 async function createFileContentThumbNail(entry_id, fileContentType) {
   //http://127.0.0.1:8080/alfresco/s/api/node/workspace/SpacesStore/2fa8a7b9-9336-46e2-bac6-2a0ed5a07e2c/content/thumbnails/imgpreview?c=queue&amp;ph=true&amp;
   try {
-    let combinedUrl = `${url}/alfresco/s/api/node/workspace/SpacesStore/${entry_id}/content/thumbnails/${fileContentType}?c=force`;
+    let combinedUrl = `${baseURL}/alfresco/s/api/node/workspace/SpacesStore/${entry_id}/content/thumbnails/${fileContentType}?c=force`;
     await axios.get(combinedUrl, {
       responseType: "arraybuffer", // Ensure binary response
       auth: {
@@ -139,7 +141,7 @@ async function createNewNode(entry_id, entry_name) {
     name: entry_name,
     nodeType: "cm:folder",
   };
-  let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?autoRename=true`;
+  let combinedUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?autoRename=true`;
   const response = await axios.post(combinedUrl, data, {
     auth: {
       username,
@@ -154,7 +156,7 @@ async function updateNodeMetaData(entry_id, metaData) {
       ...metaData,
     };
 
-    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
+    let combinedUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
     const response = await axios.put(combinedUrl, data, {
       auth: {
         username,
@@ -176,8 +178,8 @@ async function updateNodeMetaData(entry_id, metaData) {
 
 async function fetchNodeMetaData(entry_id) {
   try {
-    // Construct the URL
-    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}?include=properties`;
+    // Construct the baseURL
+    let combinedUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}?include=properties`;
 
     // Make the API request
 
@@ -199,8 +201,8 @@ async function fetchNodeMetaData(entry_id) {
 }
 async function fetchTypeProperties(type_id) {
   try {
-    // Construct the URL
-    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/types/${type_id}`;
+    // Construct the baseURL
+    let combinedUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/types/${type_id}`;
 
     // Make the API request
 
@@ -222,10 +224,10 @@ async function fetchTypeProperties(type_id) {
 }
 async function fetchTypes() {
   try {
-    // Construct the URL
+    // Construct the baseURL
     //parentId in ('cm:content')
     // where=(not namespaceUri matches('http://www.alfresco.*')) in order not to get the built-in content types.
-    let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/types?where=(not namespaceUri matches('http://www.alfresco.*'))`;
+    let combinedUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/types?where=(not namespaceUri matches('http://www.alfresco.*'))`;
 
     // Make the API request
 
@@ -247,7 +249,7 @@ async function fetchTypes() {
 }
 
 async function deleteNode(entry_id) {
-  let combinedUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
+  let combinedUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
   const response = await axios.delete(combinedUrl, {
     auth: {
       username,
@@ -271,7 +273,7 @@ async function uploadFile(entry_id, body, headers) {
     formData.append(file.fieldname, blob, file.originalname);
   });
   const response = await axios.post(
-    `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?autoRename=true`,
+    `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/children?autoRename=true`,
     formData,
     {
       auth: {
@@ -287,7 +289,7 @@ async function uploadFile(entry_id, body, headers) {
 }
 
 async function fetchEntryParent(entry_id) {
-  let subEntriesUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/parents`;
+  let subEntriesUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}/parents`;
   const res = await axios.get(subEntriesUrl, {
     auth: {
       username,
@@ -297,7 +299,7 @@ async function fetchEntryParent(entry_id) {
   return res.data.list;
 }
 async function fetchEntryMetaData(entry_id) {
-  let subEntriesUrl = `${url}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
+  let subEntriesUrl = `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/nodes/${entry_id}`;
   const res = await axios.get(subEntriesUrl, {
     auth: {
       username,
@@ -324,9 +326,53 @@ async function fetchEntryNavigation(entry_id) {
   return await buildEntryPath(entry_id);
 }
 
-// fetchFileContent("ac14adba-4a92-4d27-bddc-574263e0abd9").then((res) => {
-//   console.log(res);
-// });
+// Function to create a new user in Alfresco
+async function createUser(userData) {
+  const requestBody = {
+    ...userData,
+  };
+
+  try {
+    const response = await axios.post(
+      `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/people`,
+      requestBody,
+      {
+        auth: {
+          username,
+          password,
+        },
+      }
+    );
+
+    // console.log('User created successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    return error.response ? error.response.data : error.message;
+  }
+}
+
+// Function to get user details from Alfresco
+async function getUsers(userId) {
+  try {
+    // console.log(userId);
+    const response = await axios.get(
+      `${baseURL}/alfresco/api/-default-/public/alfresco/versions/1/people/${
+        userId || ""
+      }`,
+      {
+        auth: {
+          username,
+          password,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    return error.response ? error.response.data : error.message;
+  }
+}
+
 export {
   fetchRootEntries,
   fetchSubEntries,
@@ -342,4 +388,6 @@ export {
   fetchTypeProperties,
   fetchTypes,
   searchNodes,
+  createUser,
+  getUsers,
 };

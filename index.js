@@ -21,6 +21,8 @@ import {
   fetchTypeProperties,
   fetchTypes,
   searchNodes,
+  createUser,
+  getUsers,
 } from "./Sources/fetchAlfrescoEntries.js";
 
 const app = express();
@@ -54,11 +56,16 @@ app.get("/alFresco/subEntries/:entry_id", async (req, res) => {
 });
 
 app.get("/alFresco/entryNavigation/:entry_id", async (req, res) => {
-  const entry_id = req.params.entry_id;
+  try {
+    const entry_id = req.params.entry_id;
 
-  const navigationList = await fetchEntryNavigation(entry_id);
-  // console.log("ffff", navigationList);
-  res.send(navigationList);
+    const navigationList = await fetchEntryNavigation(entry_id);
+    // console.log("ffff", navigationList);
+    res.send(navigationList);
+  } catch (error) {
+    // console.error("Error fetching entry navigation:", error);
+    res.status(500).send("Error fetching entry navigation");
+  }
 });
 
 app.get("/alFresco/nodeContent/:entry_id", async (req, res) => {
@@ -101,12 +108,18 @@ app.get(
 );
 
 app.get("/alFresco/nodeMetaData/:entry_id", async (req, res) => {
-  const entry_id = req.params.entry_id;
+  try {
+    const entry_id = req.params.entry_id;
 
-  const fileMetaData = await fetchEntryMetaData(entry_id);
-  // console.log("ffff", fileMetaData);
-  res.send(fileMetaData);
+    const fileMetaData = await fetchEntryMetaData(entry_id);
+    // console.log("ffff", fileMetaData);
+    res.send(fileMetaData);
+  } catch (error) {
+    // console.error("Error fetching node metadata:", error);
+    res.status(500).send("Error fetching node metadata");
+  }
 });
+
 app.post("/alFresco/createFolder", async (req, res) => {
   try {
     // console.log(req.body);
@@ -174,7 +187,7 @@ app.get("/alFresco/fileNodeMetaData/:entry_id", async (req, res) => {
     res.status(response.statusCode).json(response.resBody);
   } catch (error) {
     // Handle the error
-    console.error("Error fetching file node metadata:", error);
+    // console.error("Error fetching file node metadata:", error);
     // Send an error response to the client
     res.status(500).send("Error fetching file node metadata");
   }
@@ -255,7 +268,43 @@ app.post("/alFresco/searchNodes", async (req, res) => {
     res.status(500).send(error);
   }
 });
+app.post("/alFresco/createUser", async (req, res) => {
+  try {
+    // console.log(req.body);
+    // Check if the request body contains the required fields
+    const body = req.body;
 
+    const response = await createUser(body);
+
+    res.status(200).send(response);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+app.get("/alFresco/getUsers", async (req, res) => {
+  try {
+    // const user_id = req.params.user_id;
+
+    // Call the function to fetch node metadata
+    const response = await getUsers();
+    // console.log(response);
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+app.get("/alFresco/getUsers/:user_id", async (req, res) => {
+  try {
+    const user_id = req.params.user_id;
+
+    // Call the function to fetch node metadata
+    const response = await getUsers(user_id);
+    // console.log(response);
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
